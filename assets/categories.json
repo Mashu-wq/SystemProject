@@ -1,0 +1,32 @@
+[
+  {
+    "id": "1",
+    "name": "Medicine",
+    "icon_path": "assets/images/medicine.png"
+  },
+  {
+    "id": "2",
+    "name": "Cardiologist",
+    "icon_path": "assets/images/cardiologist.png"
+  },
+  {
+    "id": "3",
+    "name": "Neurologist",
+    "icon_path": "assets/images/neuro.png"
+  },
+  {
+    "id": "4",
+    "name": "Orthopedic",
+    "icon_path": "assets/images/ortho.png"
+  },
+  {
+    "id": "5",
+    "name": "Dermatologist",
+    "icon_path": "assets/images/dermatologist.png"
+  },
+  {
+    "id": "6",
+    "name": "Dentist",
+    "icon_path": "assets/images/dentist.png"
+  }
+]
