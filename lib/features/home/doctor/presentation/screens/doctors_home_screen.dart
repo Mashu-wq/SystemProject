@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:medisafe/providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -8,10 +10,14 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final doctorName = ref.watch(doctorNameProvider);
+    final String doctorId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
+    // Get today's date in a consistent format
+    final String today = DateTime.now().toIso8601String().substring(0, 10);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Medisafe"),
+        title: const Text("Home"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -47,17 +53,56 @@ class HomeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: ListView(
-                children: const [
-                  // Appointment card example
-                  AppointmentCard(
-                    name: 'John Doe',
-                    time: '10:00 AM - 11:00 AM',
-                    status: 'Pending',
-                    payment: 'Success',
-                    details: 'Routine check-up',
-                  ),
-                ],
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('appointments')
+                    .where('doctorId',
+                        isEqualTo: doctorId) // Filter by doctor ID
+                    .where('date', isEqualTo: today) // Filter by today's date
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    debugPrint('Firestore error: ${snapshot.error}');
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    debugPrint(
+                        'No appointments found for doctorId: $doctorId and date: $today');
+                    return const Center(
+                        child: Text('No appointments for today.'));
+                  }
+
+                  final appointments = snapshot.data!.docs;
+                  debugPrint(
+                      'Fetched appointments: ${appointments.map((e) => e.data())}');
+
+                  return ListView.builder(
+                    itemCount: appointments.length,
+                    itemBuilder: (context, index) {
+                      final appointment =
+                          appointments[index].data() as Map<String, dynamic>;
+
+                      return AppointmentCard(
+                        name: appointment['patientName'] ?? 'Unknown',
+                        time: appointment['timeSlot'] ?? 'N/A',
+                        status: appointment['status'] ?? 'Pending',
+                        payment: appointment['paymentStatus'] ?? 'N/A',
+                        details:
+                            appointment['details'] ?? 'No details provided',
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
