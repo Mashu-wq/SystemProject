@@ -1,440 +1,7 @@
-// import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:medisafe/models/doctor_model.dart';
-
-// class AppointmentPage extends StatefulWidget {
-//   final Doctor doctor;
-
-//   const AppointmentPage({super.key, required this.doctor});
-
-//   @override
-//   State<AppointmentPage> createState() => _AppointmentPageState();
-// }
-
-// class _AppointmentPageState extends State<AppointmentPage> {
-//   int selectedDateIndex = 0;
-//   int selectedSlotIndex = -1;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text("Appointment"),
-//         backgroundColor: Colors.purpleAccent,
-//       ),
-//       body: StreamBuilder<DocumentSnapshot>(
-//         stream: FirebaseFirestore.instance
-//             .collection('doctors')
-//             .doc(widget.doctor.id)
-//             .snapshots(),
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState == ConnectionState.waiting) {
-//             return const Center(child: CircularProgressIndicator());
-//           }
-
-//           if (snapshot.hasError) {
-//             return Center(child: Text("Error: ${snapshot.error}"));
-//           }
-
-//           if (!snapshot.hasData || snapshot.data == null) {
-//             return const Center(child: Text("No data available."));
-//           }
-
-//           final data = snapshot.data!.data() as Map<String, dynamic>?;
-//           if (data == null || data['available_time'] == null) {
-//             return const Center(child: Text("No slots available."));
-//           }
-
-//           final availableSlots = Map<String, List<String>>.from(
-//             (data['available_time'] as Map<String, dynamic>).map(
-//               (key, value) => MapEntry(key, List<String>.from(value)),
-//             ),
-//           );
-
-//           final availableDates = availableSlots.keys.toList();
-
-//           return Padding(
-//             padding: const EdgeInsets.all(16.0),
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 _buildDateSelector(availableDates),
-//                 const SizedBox(height: 16),
-//                 _buildSlotSelector(availableSlots, availableDates),
-//                 const SizedBox(height: 32),
-//                 Center(
-//                   child: ElevatedButton(
-//                     onPressed: selectedSlotIndex != -1
-//                         ? () => _bookAppointment(
-//                               availableDates,
-//                               availableSlots,
-//                             )
-//                         : null,
-//                     style: ElevatedButton.styleFrom(
-//                       backgroundColor: Colors.blue,
-//                       disabledBackgroundColor: Colors.grey,
-//                     ),
-//                     child: const Text("Confirm Appointment"),
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           );
-//         },
-//       ),
-//     );
-//   }
-
-//   Widget _buildDateSelector(List<String> availableDates) {
-//     return Row(
-//       mainAxisAlignment: MainAxisAlignment.spaceAround,
-//       children: List.generate(availableDates.length, (index) {
-//         return GestureDetector(
-//           onTap: () {
-//             setState(() {
-//               selectedDateIndex = index;
-//               selectedSlotIndex = -1; // Reset slot selection
-//             });
-//           },
-//           child: Container(
-//             padding: const EdgeInsets.all(8.0),
-//             decoration: BoxDecoration(
-//               color: selectedDateIndex == index ? Colors.blue : Colors.white,
-//               borderRadius: BorderRadius.circular(8),
-//               border: Border.all(color: Colors.blue),
-//             ),
-//             child: Column(
-//               children: [
-//                 Text(
-//                   availableDates[index],
-//                   style: TextStyle(
-//                     color:
-//                         selectedDateIndex == index ? Colors.white : Colors.blue,
-//                     fontWeight: FontWeight.bold,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         );
-//       }),
-//     );
-//   }
-
-//   Widget _buildSlotSelector(
-//     Map<String, List<String>> availableSlots,
-//     List<String> availableDates,
-//   ) {
-//     final slots = availableSlots[availableDates[selectedDateIndex]] ?? [];
-//     return Wrap(
-//       spacing: 10,
-//       runSpacing: 10,
-//       children: List.generate(slots.length, (index) {
-//         return GestureDetector(
-//           onTap: () {
-//             setState(() {
-//               selectedSlotIndex = index;
-//             });
-//           },
-//           child: Container(
-//             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-//             decoration: BoxDecoration(
-//               color: selectedSlotIndex == index ? Colors.blue : Colors.white,
-//               borderRadius: BorderRadius.circular(8),
-//               border: Border.all(color: Colors.blue),
-//             ),
-//             child: Text(
-//               slots[index],
-//               style: TextStyle(
-//                 color: selectedSlotIndex == index ? Colors.white : Colors.blue,
-//               ),
-//             ),
-//           ),
-//         );
-//       }),
-//     );
-//   }
-
-//   Future<void> _bookAppointment(
-//     List<String> availableDates,
-//     Map<String, List<String>> availableSlots,
-//   ) async {
-//     if (selectedSlotIndex == -1 || availableDates.isEmpty) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Please select a date and time slot')),
-//       );
-//       return;
-//     }
-
-//     final user = FirebaseAuth.instance.currentUser;
-//     if (user == null) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(
-//             content: Text('You need to log in to book an appointment')),
-//       );
-//       return;
-//     }
-
-//     final selectedDate = availableDates[selectedDateIndex];
-//     final selectedSlot = availableSlots[selectedDate]![selectedSlotIndex];
-
-//     try {
-//       await FirebaseFirestore.instance.collection('appointments').add({
-//         'doctor_id': widget.doctor.id,
-//         'patient_id': user.uid,
-//         'date': selectedDate,
-//         'slot': selectedSlot,
-//         'timestamp': FieldValue.serverTimestamp(),
-//       });
-
-//       // Show confirmation dialog
-//       showDialog(
-//         context: context,
-//         builder: (context) => AlertDialog(
-//           title: const Text("Appointment Confirmed"),
-//           content: Text(
-//               "Your appointment with Dr. ${widget.doctor.name} has been confirmed."),
-//           actions: [
-//             TextButton(
-//               onPressed: () => Navigator.pop(context),
-//               child: const Text("OK"),
-//             ),
-//           ],
-//         ),
-//       );
-//     } catch (e) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         SnackBar(content: Text('Failed to book appointment: $e')),
-//       );
-//     }
-//   }
-// }
-
-// import 'package:flutter/material.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:medisafe/models/doctor_model.dart';
-
-// class AppointmentPage extends StatefulWidget {
-//   final Doctor doctor;
-
-//   const AppointmentPage({super.key, required this.doctor});
-
-//   @override
-//   State<AppointmentPage> createState() => _AppointmentPageState();
-// }
-
-// class _AppointmentPageState extends State<AppointmentPage> {
-//   int selectedDateIndex = 0;
-//   int selectedSlotIndex = -1;
-
-//   List<String> availableDates = [];
-//   Map<String, List<String>> availableSlots = {};
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _fetchAvailableSlots();
-//   }
-
-//   // Fetch available slots for the selected doctor
-//   Future<void> _fetchAvailableSlots() async {
-//     try {
-//       final doc = await FirebaseFirestore.instance
-//           .collection('doctors')
-//           .doc(widget.doctor.id)
-//           .get();
-
-//       if (doc.exists) {
-//         final data = doc.data();
-//         if (data != null && data['available_time'] != null) {
-//           final rawSlots = data['available_time'] as Map<String, dynamic>;
-
-//           setState(() {
-//             availableSlots = rawSlots.map((key, value) {
-//               return MapEntry(key, List<String>.from(value as List));
-//             });
-//             availableDates = availableSlots.keys.toList();
-//           });
-//         }
-//       }
-//     } catch (e) {
-//       print('Error fetching slots: $e');
-//     }
-//   }
-
-//   // Book appointment logic
-//   Future<void> _bookAppointment() async {
-//     if (selectedSlotIndex == -1 || availableDates.isEmpty) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Please select a date and time slot')),
-//       );
-//       return;
-//     }
-
-//     final user = FirebaseAuth.instance.currentUser;
-//     if (user == null) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Please log in to book an appointment')),
-//       );
-//       return;
-//     }
-
-//     // Proceed with booking the appointment
-//     final selectedDate = availableDates[selectedDateIndex];
-//     final selectedSlot = availableSlots[selectedDate]?[selectedSlotIndex];
-
-//     if (selectedSlot != null) {
-//       try {
-//         await FirebaseFirestore.instance.collection('appointments').add({
-//           'doctor_id': widget.doctor.id,
-//           'patient_id': user.uid,
-//           'date': selectedDate,
-//           'time_slot': selectedSlot,
-//           'status': 'pending',
-//           'created_at': FieldValue.serverTimestamp(),
-//         });
-
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(content: Text('Appointment booked successfully')),
-//         );
-//         // You can navigate to a confirmation screen or back to the home page
-//       } catch (e) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(content: Text('Error booking appointment: $e')),
-//         );
-//       }
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text('Book Appointment'),
-//         backgroundColor: Colors.purpleAccent,
-//       ),
-//       body: SingleChildScrollView(
-//         child: Padding(
-//           padding: const EdgeInsets.all(16.0),
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.start,
-//             children: [
-//               // Available Dates Section
-//               const Text(
-//                 'Select a Date:',
-//                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//               ),
-//               const SizedBox(height: 10),
-//               availableDates.isEmpty
-//                   ? const Center(child: CircularProgressIndicator())
-//                   : Column(
-//                       children: List.generate(availableDates.length, (index) {
-//                         return GestureDetector(
-//                           onTap: () {
-//                             setState(() {
-//                               selectedDateIndex = index;
-//                               selectedSlotIndex = -1; // Reset slot selection
-//                             });
-//                           },
-//                           child: Container(
-//                             margin: const EdgeInsets.symmetric(vertical: 5),
-//                             padding: const EdgeInsets.all(12),
-//                             decoration: BoxDecoration(
-//                               color: selectedDateIndex == index
-//                                   ? Colors.purpleAccent
-//                                   : Colors.grey[200],
-//                               borderRadius: BorderRadius.circular(8),
-//                             ),
-//                             child: Text(
-//                               availableDates[index],
-//                               style: TextStyle(
-//                                 fontSize: 16,
-//                                 color: selectedDateIndex == index
-//                                     ? Colors.white
-//                                     : Colors.black,
-//                               ),
-//                             ),
-//                           ),
-//                         );
-//                       }),
-//                     ),
-//               const SizedBox(height: 20),
-
-//               // Available Time Slots Section
-//               if (availableDates.isNotEmpty)
-//                 const Text(
-//                   'Select a Time Slot:',
-//                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-//                 ),
-//               const SizedBox(height: 10),
-//               availableDates.isEmpty ||
-//                       availableSlots[availableDates[selectedDateIndex]] == null
-//                   ? const Center(child: CircularProgressIndicator())
-//                   : Column(
-//                       children: List.generate(
-//                         availableSlots[availableDates[selectedDateIndex]]!
-//                             .length,
-//                         (index) {
-//                           return GestureDetector(
-//                             onTap: () {
-//                               setState(() {
-//                                 selectedSlotIndex = index;
-//                               });
-//                             },
-//                             child: Container(
-//                               margin: const EdgeInsets.symmetric(vertical: 5),
-//                               padding: const EdgeInsets.all(12),
-//                               decoration: BoxDecoration(
-//                                 color: selectedSlotIndex == index
-//                                     ? Colors.purpleAccent
-//                                     : Colors.grey[200],
-//                                 borderRadius: BorderRadius.circular(8),
-//                               ),
-//                               child: Text(
-//                                 availableSlots[
-//                                     availableDates[selectedDateIndex]]![index],
-//                                 style: TextStyle(
-//                                   fontSize: 16,
-//                                   color: selectedSlotIndex == index
-//                                       ? Colors.white
-//                                       : Colors.black,
-//                                 ),
-//                               ),
-//                             ),
-//                           );
-//                         },
-//                       ),
-//                     ),
-//               const SizedBox(height: 20),
-
-//               // Book Appointment Button
-//               Center(
-//                 child: ElevatedButton(
-//                   onPressed: _bookAppointment,
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: Colors.purpleAccent,
-//                     padding: const EdgeInsets.symmetric(
-//                         horizontal: 40, vertical: 12),
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(8),
-//                     ),
-//                   ),
-//                   child: const Text('Book Appointment',
-//                       style: TextStyle(fontSize: 18)),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:medisafe/features/home/patient/presentation/screens/appointmentsScreen.dart';
 import 'package:medisafe/models/doctor_model.dart';
 
 class AppointmentPage extends StatefulWidget {
@@ -463,47 +30,141 @@ class _AppointmentPageState extends State<AppointmentPage> {
     _fetchAvailableSlots();
   }
 
-  // Generate the next 7 days from today
   void _generateAvailableDates() {
     availableDates = [];
     for (int i = 0; i < 7; i++) {
       final date = today.add(Duration(days: i));
-      availableDates.add(
-        '${date.day}/${date.month}/${date.year}', // Format the date as Day/Month/Year
-      );
+      final formattedDate =
+          '${_getWeekdayName(date.weekday)}, ${date.day} ${_getMonthName(date.month)} ${date.year}';
+      availableDates.add(formattedDate);
     }
   }
 
-  // Fetch available slots for the selected doctor from Firestore
-  Future<void> _fetchAvailableSlots() async {
+  String _getWeekdayName(int weekday) {
+    const weekdays = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday'
+    ];
+    return weekdays[weekday - 1];
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    return months[month - 1];
+  }
+
+  void _fetchAvailableSlots() async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('doctors')
           .doc(widget.doctor.id)
           .get();
+      print('Fetched document for doctor: ${widget.doctor.id}');
 
       if (doc.exists) {
         final data = doc.data();
-        if (data != null && data['available_time'] != null) {
-          final rawSlots = data['available_time'] as Map<String, dynamic>;
+        print('Doctor document data: $data');
 
-          setState(() {
-            availableSlots = rawSlots.map((key, value) {
-              return MapEntry(key, List<String>.from(value as List));
+        if (data != null && data['available_time'] != null) {
+          print('Available time field: ${data['available_time']}');
+
+          if (data['available_time'] is String) {
+            // If `available_time` is a String, parse it
+            print('Available time is a String: ${data['available_time']}');
+            final timeRange = (data['available_time'] as String).split('-');
+            if (timeRange.length == 2) {
+              final start = timeRange[0].trim();
+              final end = timeRange[1].trim();
+              final slots = _generateTimeSlots(start, end);
+              print('Generated time slots: $slots');
+
+              setState(() {
+                // Assign the same slots to all 7 days
+                for (final date in availableDates) {
+                  availableSlots[date] = slots;
+                }
+              });
+            }
+          } else if (data['available_time'] is Map<String, dynamic>) {
+            // If `available_time` is a Map, process it as such
+            print('Available time is a Map: ${data['available_time']}');
+            final rawSlots = data['available_time'] as Map<String, dynamic>;
+            setState(() {
+              availableSlots = rawSlots.map((key, value) {
+                final start = value['start'] as String;
+                final end = value['end'] as String;
+                final slots = _generateTimeSlots(start, end);
+                print('Generated time slots for $key: $slots');
+                return MapEntry(key, slots);
+              });
+
+              // Ensure availableDates are aligned with the keys
+              availableDates = availableSlots.keys.toList();
             });
-          });
+          } else {
+            print('Available time has an unexpected type.');
+          }
+        } else {
+          print('No available_time field found in the document.');
         }
+      } else {
+        print('Doctor document does not exist');
       }
     } catch (e) {
       print('Error fetching slots: $e');
     }
   }
 
-  // Handle appointment booking
+  List<String> _generateTimeSlots(String startTime, String endTime) {
+    final List<String> slots = [];
+    final start = _parseTime(startTime);
+    final end = _parseTime(endTime);
+
+    if (start == null || end == null || start.isAfter(end)) return slots;
+
+    var current = start;
+    while (!current.isAfter(end)) {
+      slots.add(_formatTime(current));
+      current = current.add(const Duration(minutes: 30));
+    }
+
+    return slots;
+  }
+
+  DateTime? _parseTime(String time) {
+    final parts = time.split(':');
+    if (parts.length != 2) return null;
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    return DateTime(today.year, today.month, today.day, hour, minute);
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<void> _bookAppointment() async {
     if (selectedSlotIndex == -1 || availableDates.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a date and time slot')),
+        const SnackBar(content: Text('Please select a time slot')),
       );
       return;
     }
@@ -517,27 +178,65 @@ class _AppointmentPageState extends State<AppointmentPage> {
       return;
     }
 
-    // Add appointment logic to Firestore
-    try {
-      final selectedDate = availableDates[selectedDateIndex];
-      final selectedSlot = availableSlots[selectedDate]![selectedSlotIndex];
+    final selectedDate = availableDates[selectedDateIndex];
+    final selectedSlot = availableSlots[selectedDate]?[selectedSlotIndex];
 
+    try {
       await FirebaseFirestore.instance.collection('appointments').add({
         'userId': user.uid,
         'doctorId': widget.doctor.id,
+        'doctorName': widget.doctor.name, // Add doctor's name for reference
         'date': selectedDate,
         'timeSlot': selectedSlot,
-        'status': 'Pending', // Or 'Confirmed' based on your logic
+        'status': 'Pending',
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Appointment booked successfully')),
+      );
+
+      // Navigate to AppointmentsScreen
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const AppointmentsScreen()),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to book appointment: $e')),
       );
     }
+  }
+
+  Widget _buildSlotSelector() {
+    final slots = availableSlots[availableDates[selectedDateIndex]] ?? [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Select Time Slot:',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8.0, // Horizontal spacing between chips
+          runSpacing: 4.0, // Vertical spacing between lines of chips
+          children: List.generate(
+            slots.length,
+            (index) {
+              return ChoiceChip(
+                label: Text(slots[index]),
+                selected: selectedSlotIndex == index,
+                onSelected: (bool selected) {
+                  setState(() {
+                    selectedSlotIndex = selected ? index : -1;
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -558,22 +257,24 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
+
               Wrap(
                 spacing: 10,
                 children: List.generate(availableDates.length, (index) {
                   return ChoiceChip(
-                    label: Text(availableDates[index]),
+                    label:
+                        Text(availableDates[index]), // Display formatted dates
                     selected: selectedDateIndex == index,
                     onSelected: (bool selected) {
                       setState(() {
                         selectedDateIndex = selected ? index : -1;
-                        selectedSlotIndex =
-                            -1; // Reset slot when date is changed
+                        selectedSlotIndex = -1; // Reset slot selection
                       });
                     },
                   );
                 }),
               ),
+
               const SizedBox(height: 20),
 
               // Display available time slots for selected date
@@ -581,38 +282,40 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Select Time Slot:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    // const Text(
+                    //   'Select Time Slot:',
+                    //   style: TextStyle(fontWeight: FontWeight.bold),
+                    // ),
                     const SizedBox(height: 10),
-                    Column(
-                      children: List.generate(
-                        availableSlots[availableDates[selectedDateIndex]]
-                                ?.length ??
-                            0,
-                        (index) {
-                          return RadioListTile<int>(
-                            title: Text(availableSlots[
-                                availableDates[selectedDateIndex]]![index]),
-                            value: index,
-                            groupValue: selectedSlotIndex,
-                            onChanged: (value) {
-                              setState(() {
-                                selectedSlotIndex = value!;
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ),
+                    _buildSlotSelector(),
+
+                    // Column(
+                    //   children: List.generate(
+                    //     availableSlots[availableDates[selectedDateIndex]]
+                    //             ?.length ??
+                    //         0,
+                    //     (index) {
+                    //       return RadioListTile<int>(
+                    //         title: Text(availableSlots[
+                    //             availableDates[selectedDateIndex]]![index]),
+                    //         value: index,
+                    //         groupValue: selectedSlotIndex,
+                    //         onChanged: (value) {
+                    //           setState(() {
+                    //             selectedSlotIndex = value!;
+                    //           });
+                    //         },
+                    //       );
+                    //     },
+                    //   ),
+                    // ),
                   ],
                 ),
               const SizedBox(height: 20),
 
               // Book appointment button
               ElevatedButton(
-                onPressed: _bookAppointment,
+                onPressed: () => _bookAppointment(),
                 child: const Text('Book Appointment'),
               ),
             ],
