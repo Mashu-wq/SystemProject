@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medisafe/features/home/doctor/presentation/controllers/categories_controller.dart';
 import 'package:medisafe/features/home/doctor/presentation/controllers/doctors_controller.dart';
 import 'package:medisafe/features/home/doctor/presentation/screens/doctor_details_screen.dart';
+import 'package:medisafe/features/home/patient/presentation/screens/CategoryDoctorsScreen.dart';
 import 'package:medisafe/features/home/patient/presentation/screens/search_doctor_screen.dart';
 
 import 'package:medisafe/features/home/patient/presentation/widgets/customBottomNavigationBar.dart';
@@ -50,7 +52,7 @@ class PatientHomeScreen extends ConsumerWidget {
           children: [
             _buildBanner(),
             const SizedBox(height: 20),
-            _buildCategoriesSection(categoriesState),
+            _buildCategoriesSection(context, categoriesState),
             const SizedBox(height: 20),
             _buildDoctorsSection(doctorsState),
           ],
@@ -99,6 +101,9 @@ class PatientHomeScreen extends ConsumerWidget {
       child: Container(
         width: 300, // Set a fixed width for each banner
         height: 150,
+
+        /// set to 1.2.
+        ///
         decoration: BoxDecoration(
           color: Colors.purpleAccent,
           borderRadius: BorderRadius.circular(16),
@@ -130,7 +135,8 @@ class PatientHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoriesSection(AsyncValue<List<Category>> categoriesState) {
+  Widget _buildCategoriesSection(
+      BuildContext context, AsyncValue<List<Category>> categoriesState) {
     return categoriesState.when(
       data: (categories) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +151,21 @@ class PatientHomeScreen extends ConsumerWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: categories
-                  .map((category) => _buildCategoryTile(category))
+                  .map(
+                    (category) => GestureDetector(
+                      onTap: () {
+                        // Navigate to the filtered doctors screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CategoryDoctorsScreen(category: category),
+                          ),
+                        );
+                      },
+                      child: _buildCategoryTile(category),
+                    ),
+                  )
                   .toList(),
             ),
           ),
