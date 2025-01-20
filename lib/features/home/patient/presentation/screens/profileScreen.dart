@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:medisafe/features/home/patient/presentation/widgets/customBottomNavigationBar.dart';
 import 'package:medisafe/models/patient_model.dart';
 import 'package:medisafe/providers.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -76,6 +77,7 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text("Error: $error")),
       ),
+      bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 3),
     );
   }
 
@@ -132,4 +134,3 @@ class _PatientProfileScreenState extends ConsumerState<PatientProfileScreen> {
     );
   }
 }
-

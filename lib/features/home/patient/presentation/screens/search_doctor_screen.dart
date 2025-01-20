@@ -25,12 +25,10 @@ class _SearchDoctorScreenState extends ConsumerState<SearchDoctorScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
 
-    if (pickedDate != null) {
-      setState(() {
-        _selectedDate = pickedDate;
-      });
+    setState(() {
+      _selectedDate = pickedDate;
+    });
     }
-  }
 
   void _performSearch() {
     final filter = SearchFilter(

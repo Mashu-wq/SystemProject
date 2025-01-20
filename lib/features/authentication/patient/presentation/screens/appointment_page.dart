@@ -30,45 +30,15 @@ class _AppointmentPageState extends State<AppointmentPage> {
     _fetchAvailableSlots();
   }
 
+  /// Generate the next 7 dates in `yyyy-MM-dd` format
   void _generateAvailableDates() {
     availableDates = [];
     for (int i = 0; i < 7; i++) {
       final date = today.add(Duration(days: i));
       final formattedDate =
-          '${_getWeekdayName(date.weekday)}, ${date.day} ${_getMonthName(date.month)} ${date.year}';
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       availableDates.add(formattedDate);
     }
-  }
-
-  String _getWeekdayName(int weekday) {
-    const weekdays = [
-      'Sunday',
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday'
-    ];
-    return weekdays[weekday - 1];
-  }
-
-  String _getMonthName(int month) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec'
-    ];
-    return months[month - 1];
   }
 
   void _fetchAvailableSlots() async {
@@ -87,7 +57,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
           print('Available time field: ${data['available_time']}');
 
           if (data['available_time'] is String) {
-            // If `available_time` is a String, parse it
             print('Available time is a String: ${data['available_time']}');
             final timeRange = (data['available_time'] as String).split('-');
             if (timeRange.length == 2) {
@@ -97,14 +66,12 @@ class _AppointmentPageState extends State<AppointmentPage> {
               print('Generated time slots: $slots');
 
               setState(() {
-                // Assign the same slots to all 7 days
                 for (final date in availableDates) {
                   availableSlots[date] = slots;
                 }
               });
             }
           } else if (data['available_time'] is Map<String, dynamic>) {
-            // If `available_time` is a Map, process it as such
             print('Available time is a Map: ${data['available_time']}');
             final rawSlots = data['available_time'] as Map<String, dynamic>;
             setState(() {
@@ -116,7 +83,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
                 return MapEntry(key, slots);
               });
 
-              // Ensure availableDates are aligned with the keys
               availableDates = availableSlots.keys.toList();
             });
           } else {
@@ -185,8 +151,8 @@ class _AppointmentPageState extends State<AppointmentPage> {
       await FirebaseFirestore.instance.collection('appointments').add({
         'userId': user.uid,
         'doctorId': widget.doctor.id,
-        'doctorName': widget.doctor.name, // Add doctor's name for reference
-        'date': selectedDate,
+        'doctorName': widget.doctor.name,
+        'date': selectedDate, // Use yyyy-MM-dd format
         'timeSlot': selectedSlot,
         'status': 'Pending',
       });
@@ -195,7 +161,6 @@ class _AppointmentPageState extends State<AppointmentPage> {
         const SnackBar(content: Text('Appointment booked successfully')),
       );
 
-      // Navigate to AppointmentsScreen
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const AppointmentsScreen()),
@@ -218,8 +183,8 @@ class _AppointmentPageState extends State<AppointmentPage> {
         ),
         const SizedBox(height: 10),
         Wrap(
-          spacing: 8.0, // Horizontal spacing between chips
-          runSpacing: 4.0, // Vertical spacing between lines of chips
+          spacing: 8.0,
+          runSpacing: 4.0,
           children: List.generate(
             slots.length,
             (index) {
@@ -251,71 +216,32 @@ class _AppointmentPageState extends State<AppointmentPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Display available dates as buttons
               const Text(
                 'Select Date:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-
               Wrap(
                 spacing: 10,
                 children: List.generate(availableDates.length, (index) {
                   return ChoiceChip(
-                    label:
-                        Text(availableDates[index]), // Display formatted dates
+                    label: Text(availableDates[index]), // Display `yyyy-MM-dd`
                     selected: selectedDateIndex == index,
                     onSelected: (bool selected) {
                       setState(() {
                         selectedDateIndex = selected ? index : -1;
-                        selectedSlotIndex = -1; // Reset slot selection
+                        selectedSlotIndex = -1;
                       });
                     },
                   );
                 }),
               ),
-
+              const SizedBox(height: 10),
               const SizedBox(height: 20),
-
-              // Display available time slots for selected date
-              if (selectedDateIndex != -1)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // const Text(
-                    //   'Select Time Slot:',
-                    //   style: TextStyle(fontWeight: FontWeight.bold),
-                    // ),
-                    const SizedBox(height: 10),
-                    _buildSlotSelector(),
-
-                    // Column(
-                    //   children: List.generate(
-                    //     availableSlots[availableDates[selectedDateIndex]]
-                    //             ?.length ??
-                    //         0,
-                    //     (index) {
-                    //       return RadioListTile<int>(
-                    //         title: Text(availableSlots[
-                    //             availableDates[selectedDateIndex]]![index]),
-                    //         value: index,
-                    //         groupValue: selectedSlotIndex,
-                    //         onChanged: (value) {
-                    //           setState(() {
-                    //             selectedSlotIndex = value!;
-                    //           });
-                    //         },
-                    //       );
-                    //     },
-                    //   ),
-                    // ),
-                  ],
-                ),
+              if (selectedDateIndex != -1) _buildSlotSelector(),
               const SizedBox(height: 20),
-
-              // Book appointment button
               ElevatedButton(
-                onPressed: () => _bookAppointment(),
+                onPressed: _bookAppointment,
                 child: const Text('Book Appointment'),
               ),
             ],

@@ -1,7 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart'; // For generating unique room IDs
+
 import 'package:medisafe/providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -11,20 +14,18 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final doctorName = ref.watch(doctorNameProvider);
     final String doctorId = FirebaseAuth.instance.currentUser?.uid ?? '';
-
-    // Get today's date in a consistent format
     final String today = DateTime.now().toIso8601String().substring(0, 10);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text("Home"),
+        backgroundColor: Colors.purpleAccent,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Greeting Section
             doctorName.when(
               data: (name) => Text(
                 "Hello, Dr. $name",
@@ -32,21 +33,10 @@ class HomeScreen extends ConsumerWidget {
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               loading: () => const CircularProgressIndicator(),
-              error: (error, stack) => const Text("Error loading doctor name"),
+              error: (_, __) => const Text("Error loading doctor name"),
             ),
             const SizedBox(height: 20),
-            // Search Section
-            TextField(
-              decoration: InputDecoration(
-                labelText: 'Search Patient',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Today's Appointments Section
+            const DigitalClock(),
             const Text(
               "Today's Appointments",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -56,17 +46,14 @@ class HomeScreen extends ConsumerWidget {
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('appointments')
-                    .where('doctorId',
-                        isEqualTo: doctorId) // Filter by doctor ID
-                    .where('date', isEqualTo: today) // Filter by today's date
+                    .where('doctorId', isEqualTo: doctorId)
+                    .where('date', isEqualTo: today)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
-
                   if (snapshot.hasError) {
-                    debugPrint('Firestore error: ${snapshot.error}');
                     return Center(
                       child: Text(
                         'Error: ${snapshot.error}',
@@ -74,31 +61,62 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     );
                   }
-
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    debugPrint(
-                        'No appointments found for doctorId: $doctorId and date: $today');
-                    return const Center(
-                        child: Text('No appointments for today.'));
+                    return const Center(child: Text('No appointments for today.'));
                   }
 
                   final appointments = snapshot.data!.docs;
-                  debugPrint(
-                      'Fetched appointments: ${appointments.map((e) => e.data())}');
 
                   return ListView.builder(
                     itemCount: appointments.length,
                     itemBuilder: (context, index) {
-                      final appointment =
-                          appointments[index].data() as Map<String, dynamic>;
+                      final appointment = appointments[index];
+                      final userId = appointment['userId'];
+                      final data = appointment.data() as Map<String, dynamic>;
 
-                      return AppointmentCard(
-                        name: appointment['patientName'] ?? 'Unknown',
-                        time: appointment['timeSlot'] ?? 'N/A',
-                        status: appointment['status'] ?? 'Pending',
-                        payment: appointment['paymentStatus'] ?? 'N/A',
-                        details:
-                            appointment['details'] ?? 'No details provided',
+                      // Ensure roomId exists
+                      String roomId = data['roomId'] ?? const Uuid().v4();
+                      if (!data.containsKey('roomId')) {
+                        FirebaseFirestore.instance
+                            .collection('appointments')
+                            .doc(appointment.id)
+                            .update({'roomId': roomId});
+                        debugPrint('Generated new roomId: $roomId for appointment ${appointment.id}');
+                      }
+
+                      return FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('patients')
+                            .doc(userId)
+                            .get(),
+                        builder: (context, patientSnapshot) {
+                          if (patientSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const ListTile(
+                              title: Text("Loading..."),
+                              subtitle: Text("Fetching patient data"),
+                            );
+                          }
+
+                          if (!patientSnapshot.hasData ||
+                              !patientSnapshot.data!.exists) {
+                            return const ListTile(
+                              title: Text("Unknown Patient"),
+                              subtitle: Text("Patient data not found"),
+                            );
+                          }
+
+                          final patientData = patientSnapshot.data!.data() as Map<String, dynamic>;
+                          final patientName = patientData['first_name'] ?? 'Unknown';
+                          final contactNumber = patientData['contact_number'] ?? 'N/A';
+
+                          return AppointmentCard(
+                            patientName: patientName,
+                            time: data['timeSlot'] ?? 'N/A',
+                            status: data['status'] ?? 'Pending',
+                            contactNumber: contactNumber,
+                          );
+                        },
                       );
                     },
                   );
@@ -112,20 +130,63 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
+class DigitalClock extends StatefulWidget {
+  const DigitalClock({super.key});
+
+  @override
+  State<DigitalClock> createState() => _DigitalClockState();
+}
+
+class _DigitalClockState extends State<DigitalClock> {
+  late Stream<DateTime> _clockStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _clockStream = Stream.periodic(
+      const Duration(seconds: 1),
+      (_) => DateTime.now(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<DateTime>(
+      stream: _clockStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          final currentTime = snapshot.data!;
+          final timeFormatted = DateFormat('h:mm:ss a').format(currentTime);
+
+          return Center(
+            child: Text(
+              timeFormatted,
+              style: const TextStyle(
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue,
+              ),
+            ),
+          );
+        }
+        return const Center(child: CircularProgressIndicator());
+      },
+    );
+  }
+}
+
 class AppointmentCard extends StatelessWidget {
-  final String name;
+  final String patientName;
   final String time;
   final String status;
-  final String payment;
-  final String details;
+  final String contactNumber;
 
   const AppointmentCard({
     super.key,
-    required this.name,
+    required this.patientName,
     required this.time,
     required this.status,
-    required this.payment,
-    required this.details,
+    required this.contactNumber,
   });
 
   @override
@@ -137,12 +198,15 @@ class AppointmentCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Name: $name",
+            Text("Name: $patientName",
                 style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text("Contact: $contactNumber"),
             Text("Time: $time"),
-            Text("Status: $status"),
-            Text("Payment: $payment"),
-            Text("Details: $details"),
+            Text("Status: $status",
+                style: TextStyle(
+                  color: status == "Visited" ? Colors.green : Colors.orange,
+                  fontWeight: FontWeight.bold,
+                )),
           ],
         ),
       ),

@@ -47,6 +47,10 @@ class _DoctorRegistrationScreenState
     'Neurologist',
     'Pediatrician',
     'General',
+    'Dentist',
+    'Orthopedic',
+    'Dermatologist',
+    'Medicine'
     // Add more categories as needed
   ];
 

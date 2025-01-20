@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:medisafe/features/home/doctor/presentation/screens/doctor_details_screen.dart';
+import 'package:medisafe/features/home/patient/presentation/widgets/customBottomNavigationBar.dart';
+import 'package:medisafe/models/doctor_model.dart';
 
 class AppointmentsScreen extends StatefulWidget {
   const AppointmentsScreen({super.key});
@@ -10,8 +13,6 @@ class AppointmentsScreen extends StatefulWidget {
 }
 
 class _AppointmentsScreenState extends State<AppointmentsScreen> {
-  // Get the current user ID
-
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
 
   @override
@@ -19,93 +20,91 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Appointments'),
-        backgroundColor: Colors.purpleAccent,
       ),
-      body: userId.isEmpty
-          ? const Center(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('appointments')
+            .where('userId', isEqualTo: userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
               child: Text(
-                'Please log in to view your appointments.',
-                style: TextStyle(fontSize: 16),
+                'Error: ${snapshot.error}',
+                style: const TextStyle(color: Colors.red),
               ),
-            )
-          : StreamBuilder<QuerySnapshot>(
-              // Listen to the appointments collection for the current user
-              stream: FirebaseFirestore.instance
-                  .collection('appointments')
-                  .where('userId', isEqualTo: userId)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+            );
+          }
 
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No appointments found.'));
+          }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No appointments found.'));
-                }
+          final now = DateTime.now();
+          final appointments = snapshot.data!.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data;
+          }).where((appointment) {
+            final dateString = appointment['date'] as String?;
+            if (dateString == null) return false;
+            final appointmentDate = DateTime.parse(dateString);
+            return appointmentDate.isAfter(now);
+          }).toList();
 
-                // Map Firestore documents to appointment widgets
-                final appointments = snapshot.data!.docs;
+          return ListView.builder(
+            itemCount: appointments.length,
+            itemBuilder: (context, index) {
+              final appointment = appointments[index];
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ListTile(
+                  title: Text(
+                    'Dr. ${appointment['doctorName'] ?? 'Unknown'}',
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Date: ${appointment['date'] ?? 'N/A'}'),
+                      Text('Time: ${appointment['timeSlot'] ?? 'N/A'}'),
+                    ],
+                  ),
+                  onTap: () async {
+                    // Fetch the doctor's full details from Firestore using the doctorId
+                    final doctorId = appointment[
+                        'doctorId']; // Assuming 'doctorId' is in the appointment data
+                    final doctorDoc = await FirebaseFirestore.instance
+                        .collection('doctors')
+                        .doc(doctorId)
+                        .get();
 
-                // Sort appointments by date in ascending order (handling possible nulls)
-                appointments.sort((a, b) {
-                  final dateA = _parseDate(a['date']);
-                  final dateB = _parseDate(b['date']);
-                  if (dateA == null || dateB == null) return 0;
-                  return dateA.compareTo(dateB);
-                });
+                    if (doctorDoc.exists) {
+                      final doctor = Doctor.fromFirestore(doctorDoc);
 
-                return ListView.builder(
-                  itemCount: appointments.length,
-                  itemBuilder: (context, index) {
-                    final appointment = appointments[index];
-                    final data = appointment.data() as Map<String, dynamic>;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: ListTile(
-                        title: Text(
-                          'Dr. ${data['doctorName'] ?? 'Unknown'}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DoctorDetailsScreen(doctor: doctor),
                         ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Date: ${data['date'] ?? 'N/A'}'),
-                            Text('Time: ${data['timeSlot'] ?? 'N/A'}'),
-                            Text('Status: ${data['status'] ?? 'Pending'}'),
-                          ],
-                        ),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () {
-                          // Optional: Handle tap to show more details or edit
-                        },
-                      ),
-                    );
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Doctor details not found.')),
+                      );
+                    }
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 2),
     );
-  }
-
-  /// Parses the date from Firestore safely
-  DateTime? _parseDate(String? dateString) {
-    if (dateString == null || dateString.isEmpty) return null;
-    try {
-      return DateTime.parse(dateString);
-    } catch (e) {
-      debugPrint('Error parsing date: $e');
-      return null;
-    }
   }
 }

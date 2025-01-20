@@ -1,16 +1,48 @@
+// allprojects {
+//     repositories {
+//         google()
+//         mavenCentral()
+//     }
+//      dependencies {
+//         classpath 'com.android.tools.build:gradle:8.2.1'
+
+//     //     classpath 'com.google.gms:google-services:4.3.10'
+//     //     // Add any other classpath dependencies you need here.
+//      }
+// }
+
+// rootProject.buildDir = "../build"
+// subprojects {
+//     project.buildDir = "${rootProject.buildDir}/${project.name}"
+// }
+// subprojects {
+//     project.evaluationDependsOn(":app")
+// }
+
+// tasks.register("clean", Delete) {
+//     delete rootProject.buildDir
+// }
+
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Add the Android Gradle Plugin classpath here
+        classpath 'com.android.tools.build:gradle:8.2.1'
+        // Add other dependencies if needed
+        // classpath 'com.google.gms:google-services:4.3.10'
+    }
+}
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
-    // dependencies {
-    //     classpath 'com.android.tools.build:gradle:7.1.2'
-    //     classpath 'com.google.gms:google-services:4.3.10'
-    //     // Add any other classpath dependencies you need here.
-    // }
 }
-
-
 
 rootProject.buildDir = "../build"
 subprojects {

@@ -1,12 +1,19 @@
+// plugins {
+//     id "com.android.application"
+//     // START: FlutterFire Configuration
+//     id 'com.google.gms.google-services'
+//     // END: FlutterFire Configuration
+//     id "kotlin-android"
+//     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+//     id "dev.flutter.flutter-gradle-plugin"
+    
+// }
+
 plugins {
     id "com.android.application"
-    // START: FlutterFire Configuration
-    id 'com.google.gms.google-services'
-    // END: FlutterFire Configuration
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
-    
+    id 'com.google.gms.google-services' // If you are using Firebase
 }
 
 def localProperties = new Properties()
@@ -69,7 +76,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.medisafe"
-        minSdkVersion 23
+        minSdkVersion 33
         targetSdk = 33
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName

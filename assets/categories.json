@@ -28,5 +28,15 @@
     "id": "6",
     "name": "Dentist",
     "icon_path": "assets/images/dentist.png"
+  },
+  {
+    "id": "7",
+    "name": "General",
+    "icon_path": "assets/images/dentist.png"
+  },
+  {
+    "id": "8",
+    "name": "Pediatrician",
+    "icon_path": "assets/images/dentist.png"
   }
 ]
