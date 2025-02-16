@@ -4,12 +4,12 @@ import 'package:medisafe/models/doctor_model.dart';
 
 class VoiceCallScreen extends StatefulWidget {
   final Doctor doctor;
-  
+
    // Pass the Doctor object directly
 
   const VoiceCallScreen({
     super.key,
-    required this.doctor,
+    required this.doctor, required String patientId,
   });
 
   @override

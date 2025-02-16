@@ -88,7 +88,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) =>
-                              DoctorDetailsScreen(doctor: doctor),
+                              DoctorDetailsScreen(doctor: doctor, patiendId: '',),
                         ),
                       );
                     } else {

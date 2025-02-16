@@ -9,9 +9,12 @@ import 'package:medisafe/features/home/doctor/presentation/controllers/doctors_c
 class AvailableDoctorsScreen extends ConsumerWidget {
   const AvailableDoctorsScreen({super.key});
 
+  
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final doctorsState = ref.watch(doctorsControllerProvider);
+    
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -74,7 +77,7 @@ class AvailableDoctorsScreen extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DoctorDetailsScreen(doctor: doctor),
+            builder: (context) => DoctorDetailsScreen(doctor: doctor, patiendId: '',),
           ),
         );
       },

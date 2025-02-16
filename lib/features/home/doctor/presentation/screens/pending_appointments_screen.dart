@@ -6,9 +6,6 @@ class PendingAppointmentsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get today's date in 'yyyy-MM-dd' format
-    final String today = DateTime.now().toIso8601String().substring(0, 10);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Pending Appointments"),
@@ -19,8 +16,7 @@ class PendingAppointmentsScreen extends StatelessWidget {
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('appointments')
-              .where('status',
-                  isEqualTo: 'Pending') // Filter pending appointments
+              .where('status', isEqualTo: 'Pending') // Initially stored pending status
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -35,62 +31,75 @@ class PendingAppointmentsScreen extends StatelessWidget {
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(
-                  child: Text("No pending appointments found."));
+              return const Center(child: Text("No pending appointments found."));
             }
 
-            // Filter appointments excluding today's date
-            final pendingAppointments = snapshot.data!.docs.where((doc) {
-              final appointmentDate = doc['date'] ?? '';
-              return appointmentDate != today;
+            // Convert Firestore data and dynamically determine the status
+            final pendingAppointments = snapshot.data!.docs.map((doc) {
+              final appointment = doc.data() as Map<String, dynamic>;
+              final dateStr = appointment['date'] ?? '';
+              final timeSlot = appointment['timeSlot'] ?? 'N/A';
+              final userId = appointment['userId'] ?? '';
+              final isConsulted = appointment['isConsulted'] ?? false;
+
+              DateTime appointmentDate = DateTime.tryParse(dateStr) ?? DateTime(2000);
+              DateTime today = DateTime.now();
+
+              // Determine dynamic status
+              String dynamicStatus;
+              if (isConsulted) {
+                dynamicStatus = "Visited";
+              } else if (appointmentDate.isBefore(today)) {
+                dynamicStatus = "Rejected";
+              } else {
+                dynamicStatus = "Pending";
+              }
+
+              return {
+                'date': dateStr,
+                'timeSlot': timeSlot,
+                'status': dynamicStatus,
+                'userId': userId,
+              };
             }).toList();
 
             if (pendingAppointments.isEmpty) {
-              return const Center(
-                  child: Text("No pending appointments found."));
+              return const Center(child: Text("No pending appointments found."));
             }
 
             return ListView.builder(
               itemCount: pendingAppointments.length,
               itemBuilder: (context, index) {
-                final appointment =
-                    pendingAppointments[index].data() as Map<String, dynamic>;
-                final date = appointment['date'] ?? 'N/A';
-                final timeSlot = appointment['timeSlot'] ?? 'N/A';
-                final status = appointment['status'] ?? 'Pending';
-                final userId = appointment['userId'] ?? '';
+                final appointment = pendingAppointments[index];
 
                 return FutureBuilder<DocumentSnapshot>(
                   future: FirebaseFirestore.instance
                       .collection('patients')
-                      .doc(userId)
+                      .doc(appointment['userId'])
                       .get(),
                   builder: (context, patientSnapshot) {
-                    if (patientSnapshot.connectionState ==
-                        ConnectionState.waiting) {
+                    if (patientSnapshot.connectionState == ConnectionState.waiting) {
                       return const ListTile(
                         title: Text("Loading..."),
                         subtitle: Text("Fetching patient data"),
                       );
                     }
 
-                    if (!patientSnapshot.hasData ||
-                        !patientSnapshot.data!.exists) {
+                    if (!patientSnapshot.hasData || !patientSnapshot.data!.exists) {
                       return const ListTile(
                         title: Text("Unknown Patient"),
                         subtitle: Text("Patient data not found"),
                       );
                     }
 
-                    final patientData =
-                        patientSnapshot.data!.data() as Map<String, dynamic>;
+                    final patientData = patientSnapshot.data!.data() as Map<String, dynamic>;
                     final patientName = patientData['first_name'] ?? 'Unknown';
 
                     return AppointmentCard(
                       patientName: patientName,
-                      date: date,
-                      time: timeSlot,
-                      status: status,
+                      date: appointment['date'],
+                      time: appointment['timeSlot'],
+                      status: appointment['status'], // Passing dynamically determined status
                     );
                   },
                 );
@@ -103,6 +112,7 @@ class PendingAppointmentsScreen extends StatelessWidget {
   }
 }
 
+// Appointment Card UI Component
 class AppointmentCard extends StatelessWidget {
   final String patientName;
   final String date;
@@ -131,7 +141,14 @@ class AppointmentCard extends StatelessWidget {
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             Text("Date: $date"),
             Text("Time: $time"),
-            Text("Status: $status"),
+            Text("Status: $status",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: status == "Rejected"
+                        ? Colors.red
+                        : status == "Visited"
+                            ? Colors.green
+                            : Colors.orange)),
           ],
         ),
       ),

@@ -38,7 +38,7 @@ dependencies:
   intl: ^0.19.0
   firebase_auth: ^5.3.4
   firebase_core: ^3.9.0
-  flutter_local_notifications: ^17.2.3
+  flutter_local_notifications: ^18.0.1
   firebase_messaging: ^15.1.6
   http: ^1.2.2
   shared_preferences: ^2.3.2
@@ -74,6 +74,12 @@ dependencies:
   uuid: ^4.5.1
   permission_handler: ^11.3.1
   agora_token_service: ^0.1.2
+  google_mlkit_text_recognition: ^0.7.0
+  timezone: ^0.10.0
+  google_ml_vision: ^0.0.8
+  flutter_tesseract_ocr: ^0.4.28
+  google_ml_kit: ^0.15.0
+
 
 dev_dependencies:
   flutter_test:

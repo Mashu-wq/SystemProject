@@ -230,7 +230,7 @@ class PatientHomeScreen extends ConsumerWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DoctorDetailsScreen(doctor: doctor),
+            builder: (context) => DoctorDetailsScreen(doctor: doctor, patiendId: '',),
           ),
         );
       },
@@ -265,4 +265,4 @@ class PatientHomeScreen extends ConsumerWidget {
       ),
     );
   }
-}
+}  

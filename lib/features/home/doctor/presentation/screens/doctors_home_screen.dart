@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import 'package:medisafe/features/home/patient/presentation/screens/patient_profile_consultancy.dart';
 import 'package:uuid/uuid.dart'; // For generating unique room IDs
 
 import 'package:medisafe/providers.dart';
@@ -115,6 +116,7 @@ class HomeScreen extends ConsumerWidget {
                             time: data['timeSlot'] ?? 'N/A',
                             status: data['status'] ?? 'Pending',
                             contactNumber: contactNumber,
+                            patientId: userId, // Pass userId as patientId
                           );
                         },
                       );
@@ -180,6 +182,7 @@ class AppointmentCard extends StatelessWidget {
   final String time;
   final String status;
   final String contactNumber;
+  final String patientId; // Add patientId
 
   const AppointmentCard({
     super.key,
@@ -187,27 +190,38 @@ class AppointmentCard extends StatelessWidget {
     required this.time,
     required this.status,
     required this.contactNumber,
+    required this.patientId, // Include patientId in the constructor
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Name: $patientName",
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text("Contact: $contactNumber"),
-            Text("Time: $time"),
-            Text("Status: $status",
-                style: TextStyle(
-                  color: status == "Visited" ? Colors.green : Colors.orange,
-                  fontWeight: FontWeight.bold,
-                )),
-          ],
+    return GestureDetector( 
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PatientProfileForConsultancy(patientId: patientId),
+          ),
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Name: $patientName",
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text("Contact: $contactNumber"),
+              Text("Time: $time"),
+              Text("Status: $status",
+                  style: TextStyle(
+                    color: status == "Visited" ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.bold,
+                  )),
+            ],
+          ),
         ),
       ),
     );

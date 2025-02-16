@@ -6,6 +6,7 @@ class Patient {
   final String contactNumber;
   final String address;
   final String profileImageUrl;
+   final String? prescription; // Add prescription as nullable
 
   Patient({
     required this.id,
@@ -15,6 +16,7 @@ class Patient {
     required this.contactNumber,
     required this.address,
     required this.profileImageUrl,
+    this.prescription, // Mark as optional
   });
 
   factory Patient.fromFirestore(Map<String, dynamic> data, String id) {
@@ -26,6 +28,7 @@ class Patient {
       contactNumber: data['contact_number'] ?? '',
       address: data['address'] ?? '',
       profileImageUrl: data['profile_image_url'] ?? '',
+      prescription: data['prescription'], // Map prescription field
     );
   }
 }

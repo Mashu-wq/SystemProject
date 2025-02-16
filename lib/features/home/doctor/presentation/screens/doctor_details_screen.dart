@@ -163,17 +163,16 @@ import 'package:medisafe/features/authentication/patient/presentation/screens/ap
 import 'package:medisafe/features/home/doctor/presentation/screens/rating_submission_screen.dart';
 import 'package:medisafe/features/home/patient/presentation/screens/call_screen/voice_call_screen.dart';
 import 'package:medisafe/models/doctor_model.dart';
-import 'package:medisafe/models/patient_model.dart';
 
 import 'reviews_page.dart'; // New Reviews Page
 
 class DoctorDetailsScreen extends StatelessWidget {
   final Doctor doctor;
-  
+  final String patiendId;
 
   const DoctorDetailsScreen({
     super.key,
-    required this.doctor,
+    required this.doctor, required this.patiendId,
   });
 
   @override
@@ -224,7 +223,10 @@ class DoctorDetailsScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => VoiceCallScreen(),
+                          builder: (context) => VoiceCallScreen(
+                            doctor: doctor,
+                            patientId: patiendId,
+                          ),
                         ),
                       );
                     },

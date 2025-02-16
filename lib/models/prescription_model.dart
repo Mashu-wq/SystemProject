@@ -1,69 +1,68 @@
 class Prescription {
-  final String prescriptionId;
-  final String doctorId;
+  final String id;
   final String patientId;
-  final DateTime createdAt;
+  final String patientName;
+  final int patientAge;
   final List<Medicine> medicines;
+  final DateTime nextConsultancyDate;
 
   Prescription({
-    required this.prescriptionId,
-    required this.doctorId,
+    required this.id,
     required this.patientId,
-    required this.createdAt,
+    required this.patientName,
+    required this.patientAge,
     required this.medicines,
+    required this.nextConsultancyDate,
   });
+
+  factory Prescription.fromMap(Map<String, dynamic> data, String documentId) {
+    return Prescription(
+      id: documentId,
+      patientId: data['patientId'],
+      patientName: data['patientName'],
+      patientAge: data['patientAge'],
+      medicines: (data['medicines'] as List<dynamic>)
+          .map((medicine) => Medicine.fromMap(medicine))
+          .toList(),
+      nextConsultancyDate: DateTime.parse(data['nextConsultancyDate']),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'prescriptionId': prescriptionId,
-      'doctorId': doctorId,
       'patientId': patientId,
-      'createdAt': createdAt.toIso8601String(),
+      'patientName': patientName,
+      'patientAge': patientAge,
       'medicines': medicines.map((medicine) => medicine.toMap()).toList(),
+      'nextConsultancyDate': nextConsultancyDate.toIso8601String(),
     };
-  }
-
-  factory Prescription.fromFirestore(Map<String, dynamic> data) {
-    return Prescription(
-      prescriptionId: data['prescriptionId'],
-      doctorId: data['doctorId'],
-      patientId: data['patientId'],
-      createdAt: DateTime.parse(data['createdAt']),
-      medicines: (data['medicines'] as List)
-          .map((medicine) => Medicine.fromMap(medicine))
-          .toList(),
-    );
   }
 }
 
 class Medicine {
-   String name;
-   String dose;
-   String time;
-   String instructions;
+  final String name;
+  final String time; // Example: "Morning, Evening"
+  final String dose; // Example: "1 Tablet"
 
   Medicine({
     required this.name,
-    required this.dose,
     required this.time,
-    required this.instructions,
+    required this.dose,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'dose': dose,
-      'time': time,
-      'instructions': instructions,
-    };
-  }
 
   factory Medicine.fromMap(Map<String, dynamic> data) {
     return Medicine(
       name: data['name'],
-      dose: data['dose'],
       time: data['time'],
-      instructions: data['instructions'],
+      dose: data['dose'],
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'time': time,
+      'dose': dose,
+    };
   }
 }

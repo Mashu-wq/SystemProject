@@ -50,7 +50,7 @@ class CategoryDoctorsScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DoctorDetailsScreen(doctor: doctor),
+                      builder: (context) => DoctorDetailsScreen(doctor: doctor, patiendId: '',),
                     ),
                   );
                 },
