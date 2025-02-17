@@ -10,19 +10,29 @@ class SplashScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final splashState = ref.watch(splashProvider);
 
-    splashState.when(
-      data: (value) {
-        Future.delayed(const Duration(seconds: 2), () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) => const RoleSelectionScreen()),
-          );
-        });
-      },
-      loading: () => _buildLoadingScreen(),
-      error: (error, stack) => _buildErrorScreen(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      splashState.when(
+        data: (value) {
+          Future.microtask(() {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const RoleSelectionScreen()),
+            );
+          });
+        },
+        loading: () {},
+        error: (error, stack) {
+          Future.microtask(() {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const RoleSelectionScreen()),
+            );
+          });
+        },
+      );
+    });
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -31,6 +41,7 @@ class SplashScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset("assets/images/Splash.png", width: 250, height: 250),
+            const SizedBox(height: 10),
             const Text(
               "eClinic",
               style: TextStyle(
@@ -39,21 +50,11 @@ class SplashScreen extends ConsumerWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildLoadingScreen() {
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
-  }
-
-  Widget _buildErrorScreen() {
-    return const Center(
-      child: Text("Error loading data"),
     );
   }
 }

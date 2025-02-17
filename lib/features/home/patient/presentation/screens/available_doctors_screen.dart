@@ -9,56 +9,64 @@ import 'package:medisafe/features/home/doctor/presentation/controllers/doctors_c
 class AvailableDoctorsScreen extends ConsumerWidget {
   const AvailableDoctorsScreen({super.key});
 
-  
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final doctorsState = ref.watch(doctorsControllerProvider);
-    
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Available Specialist',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const SearchDoctorScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: doctorsState.when(
-        data: (doctors) => _buildDoctorsGrid(doctors),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, stack) => Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text('Error: $e'),
-        ),
+      appBar: _buildAppBar(context),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isWeb = constraints.maxWidth > 600; // Detect web layout
+          int crossAxisCount = isWeb ? 3 : 2; // Adjust grid layout
+
+          return doctorsState.when(
+            data: (doctors) => _buildDoctorsGrid(doctors, crossAxisCount),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, stack) => Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text('Error: $e'),
+            ),
+          );
+        },
       ),
       bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 1),
     );
   }
 
-  Widget _buildDoctorsGrid(List<Doctor> doctors) {
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: const Text(
+        'Available Specialists',
+        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.black),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const SearchDoctorScreen()),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDoctorsGrid(List<Doctor> doctors, int crossAxisCount) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: GridView.builder(
         padding: const EdgeInsets.only(top: 16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, // Display two cards per row
-          childAspectRatio: 0.7, // Adjust the aspect ratio for card height
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount, // Dynamic column count
+          childAspectRatio: 0.75, // Adjust for better layout
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
         ),
@@ -73,18 +81,16 @@ class AvailableDoctorsScreen extends ConsumerWidget {
   Widget _buildDoctorCard(BuildContext context, Doctor doctor) {
     return GestureDetector(
       onTap: () {
-        // Navigate to the doctor details screen when tapped
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => DoctorDetailsScreen(doctor: doctor, patiendId: '',),
+            builder: (context) =>
+                DoctorDetailsScreen(doctor: doctor, patiendId: ''),
           ),
         );
       },
       child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 4,
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -98,43 +104,35 @@ class AvailableDoctorsScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Text(
                 'Dr. ${doctor.name}',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
               Text(
                 doctor.specialization,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text(
-                'Experience: ${doctor.experience} Years',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Patients: ${doctor.patients}',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-                textAlign: TextAlign.center,
-              ),
+              _buildDetailRow(
+                  Icons.star, '${doctor.experience} Years Experience'),
+              _buildDetailRow(Icons.people, '${doctor.patients} Patients'),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String text) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text(text, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+      ],
     );
   }
 }

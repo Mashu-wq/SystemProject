@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:medisafe/features/home/doctor/presentation/screens/call_screen.dart';
+import 'package:medisafe/features/home/doctor/presentation/screens/video_call_screen.dart';
+
 import 'package:medisafe/features/home/patient/presentation/screens/prescription/prescribe_medicine.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:medisafe/models/doctor_model.dart';
 
 class PatientProfileForConsultancy extends ConsumerWidget {
   final String patientId;
@@ -35,84 +38,156 @@ class PatientProfileForConsultancy extends ConsumerWidget {
           final age = patientData['age'] ?? 'N/A';
           final gender = patientData['gender'] ?? 'N/A';
           final contact = patientData['contact_number'] ?? 'N/A';
-          final medicalHistory = patientData['medical_history'] ?? 'No history available';
-          final profileImageUrl = patientData['profile_image'] ?? ''; // Profile image URL
+          final medicalHistory =
+              patientData['medical_history'] ?? 'No history available';
+          final profileImageUrl =
+              patientData['profile_image'] ?? ''; // Profile image URL
 
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundImage: profileImageUrl.isNotEmpty
-                    ? NetworkImage(profileImageUrl)
-                    : const AssetImage("assets/default_profile.png") as ImageProvider,
-              ),
-              const SizedBox(height: 16),
-              Text("$patientName", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              Text("$gender, $age years old", style: TextStyle(color: Colors.grey[600])),
-              Text("Contact: $contact", style: TextStyle(color: Colors.grey[600])),
-              const SizedBox(height: 16),
-              const Text("Medical History:", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(medicalHistory, textAlign: TextAlign.center),
-              ),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _ActionButton(
-                    icon: FontAwesomeIcons.phone,
-                    label: "Voice Call",
-                    color: Colors.blue,
-                    onPressed: () async {
-                      final Uri phoneUrl = Uri.parse("tel:$contact");
-                      if (await canLaunchUrl(phoneUrl)) {
-                        await launchUrl(phoneUrl);
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 40),
-                  _ActionButton(
-                    icon: FontAwesomeIcons.video,
-                    label: "Video Call",
-                    color: Colors.purple,
-                    onPressed: () async {
-                      final Uri videoUrl = Uri.parse("https://video-call-platform.com/$patientId");
-                      if (await canLaunchUrl(videoUrl)) {
-                        await launchUrl(videoUrl);
-                      }
-                    },
-                  ),
-                  const SizedBox(width: 40),
-                  _ActionButton(
-                    icon: FontAwesomeIcons.comment,
-                    label: "Message",
-                    color: Colors.orange,
-                    onPressed: () {
-                      // Implement message feature
-                    },
-                  ),
-                ],
-              ),
-               const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PrescribeMedicine(patientId: '',),
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              bool isWeb = constraints.maxWidth > 600; // Detects web layout
+
+              return SingleChildScrollView(
+                child: Center(
+                  child: Container(
+                    width:
+                        isWeb ? 500 : double.infinity, // Restrict width for web
+                    padding: EdgeInsets.symmetric(horizontal: isWeb ? 40 : 16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20),
+                        CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.grey[200],
+                          backgroundImage: profileImageUrl.isNotEmpty
+                              ? NetworkImage(profileImageUrl)
+                              : null,
+                          child: profileImageUrl.isEmpty
+                              ? const Icon(Icons.person,
+                                  size: 50, color: Colors.grey)
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          patientName,
+                          style: const TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          "$gender, $age years old",
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        Text(
+                          "Contact: $contact",
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                        const SizedBox(height: 16),
+                        const Text("Medical History:",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child:
+                              Text(medicalHistory, textAlign: TextAlign.center),
+                        ),
+                        const SizedBox(height: 30),
+
+                        // Action Buttons (Voice Call, Video Call, Message)
+                        _buildActionButtons(context, contact, patientId),
+
+                        const SizedBox(height: 30),
+
+                        // Prescribe Medicine Button
+                        _buildPrescribeMedicineButton(context),
+                      ],
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text("Prescribe Medicine"),
-              ),
-            ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
+    );
+  }
+
+  Widget _buildActionButtons(
+      BuildContext context, String callerName, String callerImageUrl) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _ActionButton(
+          icon: FontAwesomeIcons.phone,
+          label: "Voice Call",
+          color: Colors.blue,
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => CallScreen(isVideoCall: false,
+                callerName: callerName,
+                callerImageUrl: callerImageUrl,)),
+            );
+          },
+        ),
+const SizedBox(width: 40),
+ _ActionButton(
+                          icon: FontAwesomeIcons.video,
+                          label: "Video Call",
+                          color: Colors.purple,
+                          onPressed: () {
+                            // The doctor object might be from your auth or Firestore
+                            // For demo, we create a dummy doctor
+                            final doc = Doctor(
+                              id: "doc123",
+                              name: "Dr. Smith",
+                              email: "doc@example.com",
+                              specialization: "General",
+                              experience: 5,
+                              patients: 50,
+                              clinicName: "City Clinic",
+                              qualifications: "MBBS, MD",
+                              availableTime: "9AM-5PM",
+                              area: "Downtown",
+                              about: "Experienced in general medicine",
+                              profileImageUrl:
+                                  "https://example.com/doctor_profile.png", // Replace with actual doc image
+                            );
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => VideoCallScreen(
+                                  doctor: doc,
+                                  patientId: patientId, // James's ID
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+      ],
+    );
+  }
+
+  Widget _buildPrescribeMedicineButton(BuildContext context) {
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PrescribeMedicine(patientId: ''),
+          ),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green,
+        padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      child: const Text("Prescribe Medicine", style: TextStyle(fontSize: 16)),
     );
   }
 }
@@ -140,7 +215,8 @@ class _ActionButton extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold),
+          style: TextStyle(
+              color: color, fontSize: 12, fontWeight: FontWeight.bold),
         ),
       ],
     );

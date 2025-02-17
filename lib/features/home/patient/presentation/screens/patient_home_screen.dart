@@ -5,7 +5,6 @@ import 'package:medisafe/features/home/doctor/presentation/controllers/doctors_c
 import 'package:medisafe/features/home/doctor/presentation/screens/doctor_details_screen.dart';
 import 'package:medisafe/features/home/patient/presentation/screens/CategoryDoctorsScreen.dart';
 import 'package:medisafe/features/home/patient/presentation/screens/search_doctor_screen.dart';
-
 import 'package:medisafe/features/home/patient/presentation/widgets/customBottomNavigationBar.dart';
 import 'package:medisafe/models/category_model.dart';
 import 'package:medisafe/models/doctor_model.dart';
@@ -20,69 +19,80 @@ class PatientHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Find Your Specialist',
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (context) => const SearchDoctorScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
+      appBar: _buildAppBar(context),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          bool isWeb = constraints.maxWidth > 600; // Detects web layout
+          return SingleChildScrollView(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: isWeb ? 60 : 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBanner(isWeb),
+                  const SizedBox(height: 20),
+                  _buildCategoriesSection(context, categoriesState),
+                  const SizedBox(height: 20),
+                  _buildDoctorsSection(doctorsState),
+                ],
+              ),
+            ),
+          );
+        },
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBanner(),
-            const SizedBox(height: 20),
-            _buildCategoriesSection(context, categoriesState),
-            const SizedBox(height: 20),
-            _buildDoctorsSection(doctorsState),
-          ],
-        ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 0,
-      ),
+      bottomNavigationBar: CustomBottomNavigationBar(currentIndex: 0),
     );
   }
 
-  Widget _buildBanner() {
+  AppBar _buildAppBar(BuildContext context) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      title: const Text(
+        'Find Your Specialist',
+        style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      ),
+      centerTitle: true,
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.search, color: Colors.black),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SearchDoctorScreen()),
+            );
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBanner(bool isWeb) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             _buildSingleBanner(
               title: 'Looking For Your Desire Specialist Doctor?',
               name: 'Dr. Asma Khan',
               specialization: 'Medicine & Heart Specialist',
               clinic: 'Good Health Clinic',
+              width: isWeb ? 350 : 300,
             ),
             _buildSingleBanner(
               title: 'Need a Neurologist?',
               name: 'Dr. John Doe',
               specialization: 'Neurology Specialist',
               clinic: 'Brain Health Clinic',
+              width: isWeb ? 350 : 300,
             ),
-            // You can add more banners like this if needed
           ],
         ),
       ),
@@ -94,15 +104,13 @@ class PatientHomeScreen extends ConsumerWidget {
     required String name,
     required String specialization,
     required String clinic,
+    required double width,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: Container(
-        width: 300, // Set a fixed width for each banner
+        width: width,
         height: 150,
-
-        /// set to 1.2.
-        ///
         decoration: BoxDecoration(
           color: Colors.purpleAccent,
           borderRadius: BorderRadius.circular(16),
@@ -113,10 +121,7 @@ class PatientHomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-              ),
+              Text(title, style: const TextStyle(color: Colors.white, fontSize: 18)),
               const SizedBox(height: 8),
               Text(
                 '$name\n$specialization\n$clinic',
@@ -134,38 +139,30 @@ class PatientHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoriesSection(
-      BuildContext context, AsyncValue<List<Category>> categoriesState) {
+  Widget _buildCategoriesSection(BuildContext context, AsyncValue<List<Category>> categoriesState) {
     return categoriesState.when(
       data: (categories) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Categories',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text('Categories', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: categories
-                  .map(
-                    (category) => GestureDetector(
-                      onTap: () {
-                        // Navigate to the filtered doctors screen
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CategoryDoctorsScreen(category: category),
-                          ),
-                        );
-                      },
-                      child: _buildCategoryTile(category),
+              children: categories.map((category) => GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CategoryDoctorsScreen(category: category),
                     ),
-                  )
-                  .toList(),
+                  );
+                },
+                child: _buildCategoryTile(category),
+              )).toList(),
             ),
           ),
         ],
@@ -201,8 +198,7 @@ class PatientHomeScreen extends ConsumerWidget {
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Available Doctors',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            child: Text('Available Doctors', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(height: 8),
           ListView.builder(
@@ -226,7 +222,6 @@ class PatientHomeScreen extends ConsumerWidget {
   Widget _buildDoctorCard(BuildContext context, Doctor doctor) {
     return GestureDetector(
       onTap: () {
-        // Navigate to the doctor details screen when tapped
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -241,28 +236,11 @@ class PatientHomeScreen extends ConsumerWidget {
             backgroundImage: NetworkImage(doctor.profileImageUrl),
             radius: 30,
           ),
-          title: Text(doctor.name,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${doctor.specialization} • ${doctor.experience} years experience',
-                style: const TextStyle(fontSize: 12),
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.people, size: 14, color: Colors.grey),
-                  Text(' ${doctor.patients} Patients',
-                      style: const TextStyle(fontSize: 12)),
-                ],
-              ),
-            ],
-          ),
+          title: Text(doctor.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+          subtitle: Text('${doctor.specialization} • ${doctor.experience} years experience'),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         ),
       ),
     );
   }
-}  
+}

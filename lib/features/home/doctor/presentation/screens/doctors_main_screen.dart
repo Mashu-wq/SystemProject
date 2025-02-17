@@ -1,54 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'doctors_home_screen.dart';
-// import 'pending_appointments_screen.dart';
-// import 'visited_appointments_screen.dart';
-// import 'doctors_profile_screen.dart';
-
-// class DoctorMainScreen extends ConsumerStatefulWidget {
-//   const DoctorMainScreen({super.key});
-
-//   @override
-//   _DoctorMainScreenState createState() => _DoctorMainScreenState();
-// }
-
-// class _DoctorMainScreenState extends ConsumerState<DoctorMainScreen> {
-//   int _selectedIndex = 0;
-
-//   final List<Widget> _screens = [
-//     const HomeScreen(),
-//     const PendingAppointmentsScreen(),
-//     const VisitedAppointmentsScreen(),
-//     ProfileScreen(doctorId: ''),
-//   ];
-
-//   void _onItemTapped(int index) {
-//     setState(() {
-//       _selectedIndex = index;
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       body: _screens[_selectedIndex],
-//       bottomNavigationBar: BottomNavigationBar(
-//         selectedItemColor: Colors.purpleAccent,
-//         unselectedItemColor: Colors.grey,
-//         //backgroundColor: Colors.purpleAccent,
-//         currentIndex: _selectedIndex,
-//         onTap: _onItemTapped,
-//         items: const [
-//           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-//           BottomNavigationBarItem(icon: Icon(Icons.pending), label: 'Pending'),
-//           BottomNavigationBarItem(
-//               icon: Icon(Icons.check_circle), label: 'Visited'),
-//           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -96,7 +45,6 @@ class _DoctorMainScreenState extends ConsumerState<DoctorMainScreen> {
         MaterialPageRoute(
           builder: (context) => ProfileScreen(
             doctorId: doctorId,
-            patientId: '',
           ),
         ),
       ).then((_) {

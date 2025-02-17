@@ -278,17 +278,6 @@ class _DoctorRegistrationScreenState
                       ),
                       const SizedBox(height: 8),
 
-                      //Register Buttonre
-                      // ElevatedButton(
-                      //   onPressed: _registerDoctor,
-                      //   style: ElevatedButton.styleFrom(
-                      //     padding: const EdgeInsets.symmetric(
-                      //         horizontal: 100, vertical: 15),
-                      //     shape: const StadiumBorder(),
-                      //     backgroundColor: Colors.deepPurple,
-                      //   ),
-                      //   child: const Text('Register'),
-                      // ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
@@ -298,19 +287,7 @@ class _DoctorRegistrationScreenState
                         ),
                         onPressed: () {
                           if (_formKey.currentState!.validate()) {
-                            // ref
-                            //     .read(doctorRegistrationController.notifier)
-                            //     .registerDoctor(
-                            //       email: _emailController.text.trim(),
-                            //       password: _passwordController.text.trim(),
-                            //       doctorName: _nameController.text.trim(),
-                            //       hospitalName: _hospitalController.text.trim(),
-                            //       contactNumber: _contactController.text.trim(),
-                            //       gender: _selectedGender,
-                            //       dateOfBirth: _selectedDate!,
-                            //       profileImage:
-                            //           _profileImage, // The image file selected by the user
-                            //     )
+                           
                             _registerDoctor().then((_) {
                               // Navigate back to the login screen after successful registration
                               ScaffoldMessenger.of(context).showSnackBar(
